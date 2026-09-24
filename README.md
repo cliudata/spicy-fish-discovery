@@ -1,76 +1,67 @@
-# From Demand Problem to Discovery Problem
+# Spicy fish, discovery, and the risk we missed
 
-A TikTok Shop case study in letting data challenge assumptions.
+### A small business case study in asking a better question twice
 
-**TL;DR:** We sold a spicy dried fish snack and assumed demand came only from customers already familiar with the product. Sales and customer acquisition data showed the opposite: most buyers were new to the product and had discovered it through TikTok creators. The real bottleneck was discovery, not demand. We shifted marketing spend toward creator led discovery and growth accelerated.
+> **True account, synthetic examples.** I co-founded Chitaro Mart, a TikTok Shop business selling Asian snacks. Our business-wide totals exceeded 16,000 units and approached 10,000 followers. We ultimately closed after weather-related disruption. These facts are drawn from my account; the public order sample and inventory model below are fabricated demonstrations. The repository contains no customer records or measured weather losses.
 
-> **A note on data:** no real customer, order, or supplier records are shared in this repo. The business level aggregates mentioned here (16,000+ units sold, nearly 10,000 TikTok followers) are real figures from the business. The order level dataset, the charts, and the month by month figures are synthetic and illustrative: they reproduce the shape of what the actual analysis found. What matters here is the reasoning, not the rows.
+## The first question: was there demand outside the familiar audience?
 
-## Background
+I assumed a spicy dried fish snack would have a narrow audience of people who already knew the product. Reviewing sales and customer patterns challenged that view: customers from different backgrounds were discovering it through TikTok creators. We broadened our creator-led product discovery strategy. The business grew, but I cannot isolate the contribution of that change from the other decisions we made. The 16,000-plus units and follower total refer to the **whole business**, not this product or a measured campaign effect.
 
-In 2023 I co founded Chitaro Mart, a self funded e commerce business selling Asian snacks on TikTok Shop. Over two and a half years the business sold 16,000+ units and grew to nearly 10,000 TikTok followers. I owned the analytics function end to end: defining KPIs, cleaning and analyzing sales, customer, return, and inventory data, and turning findings into decisions.
+To demonstrate the segmentation logic without exposing customer data, the repository includes a **synthetic** order sample. In its 2,330 fabricated rows, 60.6% of orders carry a constructed `new` familiarity label. Within that group, 72.0% carry a `tiktok_creator` source label. These are **order shares in an example**, not real customer shares, creator attribution, or evidence for a causal effect.
 
-One of our products was a spicy dried fish snack. It was doing fine, but I believed its ceiling was low.
+![Synthetic order mix](charts/customer_mix.png)
 
-## The hypothesis
+![Synthetic source mix](charts/channel_mix.png)
 
-My working assumption was simple: this is a niche product. Demand comes from customers who already know and like it. People unfamiliar with it will not buy it, so marketing should target the familiar audience and we should not expect much growth beyond them.
+There is an important data quality warning: 92 sample rows carry both `new` and `repeat_purchase`. The original generator and definitions are unavailable. I therefore report labels as given and **do not call them verified first-time buyers**. Details are in [data/README.md](data/README.md).
 
-If that hypothesis were true, the buyer base should skew heavily toward repeat or familiar customers, and acquisition channels should be dominated by search and repeat purchase.
+## The second question: what happens when operations fail?
 
-## The data
+The business later closed after weather-related disruption. The public records in this repository do not establish its precise mechanism, timeline, dollar cost, or what intervention might have prevented closure. That is exactly the limitation I want this case study to confront. A finding about demand does not provide a forecast of external risk or a resilience plan.
 
-I pulled order level data across six months and tagged each order with two attributes:
+I built a *separate, hypothetical* delivery-delay stress test to make the next analytical question concrete. It is **not a reconstruction** of the weather event. Its deliberately simple assumptions are 10 units demanded each day for 21 days, 120 units on hand, and 100 more due on day 9. A seven-day delay creates 30 unfilled units in the model; adding 30 opening units removes those unfilled units but requires holding the extra stock. This is a scenario calculation, **not an estimate of our actual losses or an optimal stocking policy**.
 
-* **Customer familiarity:** was this buyer already familiar with the product category, or new to it?
-* **Acquisition channel:** how did they arrive, TikTok creator content, search, referral, or repeat purchase?
+![Hypothetical delivery delay scenario](charts/disruption_scenario.png)
 
-Then I asked three questions:
+| Model outcome | On-time delivery | Seven-day delay | Delay with 30 extra opening units |
+| --- | ---: | ---: | ---: |
+| Units fulfilled in 21 days | 210 | 180 | 210 |
+| Units unfilled | 0 | 30 | 0 |
+| Initial inventory units | 120 | 120 | 150 |
 
-1. Who is actually buying, familiar customers or new ones?
-2. How did the new buyers find us?
-3. What happened to the trend after we acted on the answers?
+**Sensitivity to assumptions:** The number of unfilled units changes when the hypothetical delay or opening inventory changes. These are modeled units, not estimated historical losses.
 
-The full walkthrough is in [`notebooks/discovery_analysis.ipynb`](notebooks/discovery_analysis.ipynb), using the illustrative dataset in [`data/sample_orders.csv`](data/sample_orders.csv).
+| Delivery delay | 120 opening units | 135 opening units | 150 opening units |
+| --- | ---: | ---: | ---: |
+| 0 days | 0 | 0 | 0 |
+| 3 days | 0 | 0 | 0 |
+| 7 days | 30 | 15 | 0 |
+| 10 days | 60 | 45 | 30 |
 
-## The findings
+The model omits demand variability, multiple deliveries, spoilage, storage cost, cash constraints, supplier alternatives, and the event's actual cause. More inventory could be expensive or impossible for a small business. In a real decision I would compare the cost and cash tied up in a buffer against service levels across several delay and demand assumptions, then monitor inventory coverage and supplier lead times. Without dated operational and weather records, I cannot fit or validate a weather forecast or estimate a counterfactual outcome.
 
-**Finding 1: most buyers were new to the product.**
+## What I would do differently
 
-![Customer mix](charts/customer_mix.png)
+1. **Keep the useful discovery insight.** Define product-level outcomes and distinguish creator exposure from an order-source label. Compare a test or credible baseline before attributing growth to a marketing change.
+2. **Make risk visible alongside growth.** Monitor days of inventory cover, inbound lead times, fulfillment delays and supplier concentration. Give each metric an owner and a response threshold.
+3. **Stress test before committing cash.** Evaluate several lead-time, demand and buffer assumptions; include carrying cost, shelf life and liquidity. Choose a response that the business can actually fund.
+4. **Record events and review misses.** Capture dated disruptions and decisions, then test whether earlier warnings would have offered useful lead time. A neat upward historical curve is not proof that tomorrow will be safe.
 
-The majority of orders came from customers trying the product for the first time. My hypothesis was wrong at the first hurdle.
+These are proposed improvements informed by the closure, **not work I claim to have completed while running the business**.
 
-**Finding 2: new buyers arrived through TikTok creators.**
+## Reproduce every public calculation
 
-![Channel mix](charts/channel_mix.png)
+With Python 3.10 or newer, from the repository root:
 
-Roughly seven in ten new buyers discovered the product through TikTok creator content, not search. Familiar buyers behaved as expected, arriving mostly via search and repeat purchase. The two segments lived in completely different acquisition worlds.
+```bash
+python -m pip install -r requirements.txt
+python scripts/analyze.py
+python scripts/scenario.py
+```
 
-**Finding 3: the problem was discovery, not demand.**
+`analyze.py` validates the provided CSV and regenerates the two order illustrations. `scenario.py` generates the stress test from explicit assumptions in its `Assumptions` class. The [executed notebook](notebooks/discovery_analysis.ipynb) walks through the questions and computed results. [SQL examples](sql/analysis.sql) reproduce the order aggregations in SQLite. [Data documentation](data/README.md) describes the sample, its provenance gaps and prohibited interpretations. No confidential customer or supplier data are published.
 
-Put together, the picture was clear. Demand existed well beyond the familiar audience. The bottleneck was that unfamiliar customers simply never encountered the product. Creators were already doing the discovery work organically. We were underinvesting in the exact channel that was bringing in new buyers.
+## Author
 
-## The decision
-
-We stopped treating this as a niche product for a niche audience. Marketing resources shifted toward creator led discovery: expanding creator partnerships, prioritizing products with creator momentum in merchandising, and measuring creator driven acquisition as a first class KPI instead of a side metric.
-
-![Monthly trend](charts/monthly_trend.png)
-
-## The result
-
-After the shift, growth in this product line accelerated and the broader business continued to scale, ultimately reaching 16,000+ units sold and nearly 10,000 TikTok followers. The deeper win was a change in how we made decisions: every product since then started with the question "what does the data say about who is actually buying?" rather than "who do we assume is buying?"
-
-## What I took away
-
-* **Write the hypothesis down before you query.** If I had not stated my assumption explicitly, I could have easily read the same data as confirmation that "the niche audience loves us."
-* **Segment before you summarize.** Overall averages hid the story. Splitting buyers by familiarity and channel is what surfaced it.
-* **Let the data reframe the problem.** The highest value analysis is not the one that answers the question well, it is the one that shows you were asking the wrong question.
-
-## Tools
-
-Python (pandas, matplotlib), SQL style aggregation, Excel and Tableau for the original business dashboards.
-
-## About me
-
-Chen Liu, BBA in Statistics and Quantitative Modeling (Baruch College, GPA 3.75), incoming MSE in Data Science at the University of Pennsylvania. Two and a half years as co founder of a TikTok Shop business, doing everything from SQL queries to creator partnerships. Open to data analyst roles in NYC or remote.
+Chris (Chen) Liu · BBA in Statistics and Quantitative Modeling, Baruch College · Incoming MSE in Data Science, University of Pennsylvania. I built this case to show both a useful business insight and how the end of the business changed the questions I ask of data.
